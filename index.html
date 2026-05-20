@@ -148,8 +148,7 @@
 </div>
 
 <script>
-    // Live Cloudflare Workers Endpoint Architecture
-    const CLOUDFLARE_API_URL = "https://wedding-seating.charbel-kanaan86.workers.dev/api/search";
+const CLOUDFLARE_API_URL = "https://wedding-seating.charbel-kanaan86.workers.dev/api/search";
 
     const searchInput = document.getElementById('nameSearch');
     const displayArea = document.getElementById('displayArea');
@@ -157,58 +156,53 @@
 
     searchInput.addEventListener('input', (event) => {
         const searchTerm = event.target.value.trim();
-        displayArea.innerHTML = '';
-
-        // Keeps UI clean until they type a meaningful chunk
-        if (searchTerm.length < 3) {
+        
+        // Keeps UI completely clean until they type at least 2 letters
+        if (searchTerm.length < 2) {
+            displayArea.innerHTML = '';
             return;
         }
 
-        // Debounce network requests to wait until the guest pauses typing (300ms)
+        // Debounce requests to 250ms so it doesn't spam the network on every single keystroke
         clearTimeout(timeoutDebounce);
         timeoutDebounce = setTimeout(() => {
             fetchSeatingData(searchTerm);
-        }, 300); 
+        }, 250); 
     });
 
     async function fetchSeatingData(query) {
         try {
-            displayArea.innerHTML = '<div class="status-message">Searching guest list...</div>';
-            
-            // Query our live database layer on the Cloudflare edge network
+            // Fetch the prefix array from your newly updated worker
             const response = await fetch(`${CLOUDFLARE_API_URL}?name=${encodeURIComponent(query)}`);
             
+            if (!response.ok) throw new Error("API Network issue");
+            
+            const result = await response.json();
             displayArea.innerHTML = '';
 
-            // Handle missing search hits safely
-            if (response.status === 404) {
+            // Handle no matches found
+            if (!result.success || !result.data || result.data.length === 0) {
                 displayArea.innerHTML = `
                     <div class="status-message">
                         No results found.<br>
-                        <span style="font-size: 12px; color: #a0aec0;">Try entering your complete full name matching the invitation.</span>
+                        <span style="font-size: 12px; color: #a0aec0;">Check your spelling or type your last name instead.</span>
                     </div>`;
                 return;
             }
 
-            if (!response.ok) {
-                throw new Error("API Connection Error");
-            }
-
-            // Parse response matching your exact uppercase JSON database properties
-            const guest = await response.json();
-
-            // Construct and inject the visual layout response
-            const item = document.createElement('div');
-            item.className = 'guest-item';
-            item.innerHTML = `
-                <span class="name-text">${guest.Name}</span>
-                <span class="table-number">Table ${guest.TableNbr}</span>
-            `;
-            displayArea.appendChild(item);
+            // Loop through the list of matches and append them to the UI dynamically
+            result.data.forEach(guest => {
+                const item = document.createElement('div');
+                item.className = 'guest-item';
+                item.innerHTML = `
+                    <span class="name-text">${guest.Name}</span>
+                    <span class="table-number">Table ${guest.TableNbr}</span>
+                `;
+                displayArea.appendChild(item);
+            });
 
         } catch (err) {
-            console.error("Secure fetch failure:", err);
-            displayArea.innerHTML = '<div class="status-message">Connection issue. Please see our coordinator.</div>';
+            console.error("Fetch failure:", err);
         }
     }
 </script>

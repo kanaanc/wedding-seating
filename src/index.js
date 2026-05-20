@@ -1,47 +1,61 @@
 export default {
   async fetch(request, env) {
-    // Set up standard cross-origin headers so your frontend can read the response safely
-    const headers = {
+    // 1. Handle CORS so your GitHub Pages site can talk to this backend safely
+    const corsHeaders = {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type",
     };
 
-    // Handle preflight options request from the browser
     if (request.method === "OPTIONS") {
-      return new Response(null, { headers });
+      return new Response(null, { headers: corsHeaders });
     }
 
     const url = new URL(request.url);
-    
-    // Look for incoming requests to /api/search?name=Someone
-    if (url.pathname === "/api/search") {
-      const nameParam = url.searchParams.get("name")?.trim().toLowerCase();
+    const searchTerm = url.searchParams.get("name");
 
-      if (!nameParam) {
-        return new Response(JSON.stringify({ error: "Missing name parameter" }), {
-          status: 400,
-          headers: { ...headers, "Content-Type": "application/json" }
-        });
-      }
-
-      // Check your ultra-fast global edge cache storage
-      const guestData = await env.WEDDING_DATA.get(nameParam);
-
-      if (!guestData) {
-        return new Response(JSON.stringify({ error: "Guest not found" }), {
-          status: 404,
-          headers: { ...headers, "Content-Type": "application/json" }
-        });
-      }
-
-      // Return the guest details (table number, seating group, etc.)
-      return new Response(guestData, {
-        status: 200,
-        headers: { ...headers, "Content-Type": "application/json" }
+    if (!searchTerm) {
+      return new Response(JSON.stringify({ success: false, error: "Missing name" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
-    return new Response("Not Found", { status: 404 });
+    try {
+      // 2. Normalize input to lowercase to make the prefix search case-insensitive
+      const normalizedSearch = searchTerm.toLowerCase().trim();
+
+      // 3. Scan the KV store for any keys starting with this prefix (limit to top 10 matches)
+      const kvList = await env.WEDDING_DATA.list({ 
+        prefix: normalizedSearch,
+        limit: 10 
+      });
+
+      if (kvList.keys.length === 0) {
+        return new Response(JSON.stringify({ success: true, data: [] }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      // 4. Fetch the full objects for all matching keys in parallel
+      const matches = await Promise.all(
+        kvList.keys.map(async (keyObj) => {
+          const rawData = await env.WEDDING_DATA.get(keyObj.name);
+          return JSON.parse(rawData);
+        })
+      );
+
+      return new Response(JSON.stringify({ success: true, data: matches }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+
+    } catch (error) {
+      return new Response(JSON.stringify({ success: false, error: error.message }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
   }
 };
