@@ -1,0 +1,11 @@
+{
+  "name": "wedding-seating",
+  "main": "src/index.js",
+  "compatibility_date": "2026-05-19",
+  "kv_namespaces": [
+    {
+      "binding": "WEDDING_DATA",
+      "id": "2960ca780eaf40cfa498d3429fe7a0b2"
+    }
+  ]
+}

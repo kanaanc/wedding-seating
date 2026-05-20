@@ -1,0 +1,7 @@
+# Ignore local Cloudflare Wrangler credentials & caches
+.wrangler/
+wrangler-account.json
+
+# Ignore system files
+.DS_Store
+Thumbs.db
