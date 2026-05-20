@@ -23,13 +23,19 @@ export default {
     try {
       const normalizedSearch = searchTerm.toLowerCase().trim();
 
-      // 1. Pull ALL keys from the KV store (handles up to 1000 items instantly)
+      // 1. Fetch all guest keys from the KV store
       const kvList = await env.WEDDING_DATA.list();
 
-      // 2. Filter keys where the guest name INCLUDES the typed text anywhere
-      const matchingKeys = kvList.keys.filter(keyObj => 
-        keyObj.name.includes(normalizedSearch)
-      ).slice(0, 10); // Limit to top 10 UI matches for performance
+      // 2. Smart word-boundary filter
+      const matchingKeys = kvList.keys.filter(keyObj => {
+        const fullName = keyObj.name; // This is already lowercase in your database
+        
+        // Split the full name into individual names (e.g., ["eva", "gonzales", "layoso"])
+        const nameWords = fullName.split(/\s+/);
+        
+        // Check if ANY of those individual names start with the search term
+        return nameWords.some(word => word.startsWith(normalizedSearch));
+      }).slice(0, 10); // Keep UI clean with top 10 results
 
       if (matchingKeys.length === 0) {
         return new Response(JSON.stringify({ success: true, data: [] }), {
@@ -38,7 +44,7 @@ export default {
         });
       }
 
-      // 3. Fetch full data payloads for the matched subset in parallel
+      // 3. Resolve the full data payloads in parallel
       const matches = await Promise.all(
         matchingKeys.map(async (keyObj) => {
           const rawData = await env.WEDDING_DATA.get(keyObj.name);
