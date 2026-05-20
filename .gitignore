@@ -5,3 +5,5 @@ wrangler-account.json
 # Ignore system files
 .DS_Store
 Thumbs.db
+
+secure_guests.json
