@@ -1,6 +1,5 @@
 export default {
   async fetch(request, env) {
-    // 1. Handle CORS so your GitHub Pages site can talk to this backend safely
     const corsHeaders = {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, OPTIONS",
@@ -22,25 +21,26 @@ export default {
     }
 
     try {
-      // 2. Normalize input to lowercase to make the prefix search case-insensitive
       const normalizedSearch = searchTerm.toLowerCase().trim();
 
-      // 3. Scan the KV store for any keys starting with this prefix (limit to top 10 matches)
-      const kvList = await env.WEDDING_DATA.list({ 
-        prefix: normalizedSearch,
-        limit: 10 
-      });
+      // 1. Pull ALL keys from the KV store (handles up to 1000 items instantly)
+      const kvList = await env.WEDDING_DATA.list();
 
-      if (kvList.keys.length === 0) {
+      // 2. Filter keys where the guest name INCLUDES the typed text anywhere
+      const matchingKeys = kvList.keys.filter(keyObj => 
+        keyObj.name.includes(normalizedSearch)
+      ).slice(0, 10); // Limit to top 10 UI matches for performance
+
+      if (matchingKeys.length === 0) {
         return new Response(JSON.stringify({ success: true, data: [] }), {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" }
         });
       }
 
-      // 4. Fetch the full objects for all matching keys in parallel
+      // 3. Fetch full data payloads for the matched subset in parallel
       const matches = await Promise.all(
-        kvList.keys.map(async (keyObj) => {
+        matchingKeys.map(async (keyObj) => {
           const rawData = await env.WEDDING_DATA.get(keyObj.name);
           return JSON.parse(rawData);
         })
