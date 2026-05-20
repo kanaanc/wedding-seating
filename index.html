@@ -131,14 +131,14 @@
 
 <div class="wrapper">
     <h1>Welcome to <br> Charbel & Paz Amor's<br> Wedding</h1>
-    <p class="subtitle">Please enter your name below<br>to find your table assignment.</p>
+    <p class="subtitle">Please enter your full name below<br>to find your table assignment.</p>
     
     <div class="search-container">
         <input 
             type="text" 
             id="nameSearch" 
             class="input-field" 
-            placeholder="Type your first or last name..." 
+            placeholder="Type your first and last name..." 
             autocomplete="off" 
             autofocus
         >
@@ -148,8 +148,8 @@
 </div>
 
 <script>
-    // Exact case-sensitive match directly from your Google deployment window
-    const GOOGLE_API_URL = "https://script.google.com/macros/s/AKfycbxWCdrx3bnp5vlGvviYsDX7sn49aYUUZMw93k4fgrQak5pvf3sBMyhYukwqjXIpOYoy/exec";
+    // Live Cloudflare Workers Endpoint Architecture
+    const CLOUDFLARE_API_URL = "https://wedding-seating.charbel-kanaan86.workers.dev/api/search";
 
     const searchInput = document.getElementById('nameSearch');
     const displayArea = document.getElementById('displayArea');
@@ -159,8 +159,8 @@
         const searchTerm = event.target.value.trim();
         displayArea.innerHTML = '';
 
-        // Keeps UI clean until they type at least 2 letters
-        if (searchTerm.length < 2) {
+        // Keeps UI clean until they type a meaningful chunk
+        if (searchTerm.length < 3) {
             return;
         }
 
@@ -175,36 +175,36 @@
         try {
             displayArea.innerHTML = '<div class="status-message">Searching guest list...</div>';
             
-            // Securely call your private Google Apps Script endpoint with redirect handling
-            const response = await fetch(`${GOOGLE_API_URL}?search=${encodeURIComponent(query)}`, {
-                method: 'GET',
-                mode: 'cors',
-                redirect: 'follow'
-            });
-            const result = await response.json();
-
+            // Query our live database layer on the Cloudflare edge network
+            const response = await fetch(`${CLOUDFLARE_API_URL}?name=${encodeURIComponent(query)}`);
+            
             displayArea.innerHTML = '';
 
-            // If Google returns an error or zero matches
-            if (!result.success || result.data.length === 0) {
+            // Handle missing search hits safely
+            if (response.status === 404) {
                 displayArea.innerHTML = `
                     <div class="status-message">
                         No results found.<br>
-                        <span style="font-size: 12px; color: #a0aec0;">Try checking the spelling or typing your last name.</span>
+                        <span style="font-size: 12px; color: #a0aec0;">Try entering your complete full name matching the invitation.</span>
                     </div>`;
                 return;
             }
 
-            // Securely loop through and render only the matching names returned by Google
-            result.data.forEach(guest => {
-                const item = document.createElement('div');
-                item.className = 'guest-item';
-                item.innerHTML = `
-                    <span class="name-text">${guest.name}</span>
-                    <span class="table-number">Table ${guest.table}</span>
-                `;
-                displayArea.appendChild(item);
-            });
+            if (!response.ok) {
+                throw new Error("API Connection Error");
+            }
+
+            // Parse response matching your exact uppercase JSON database properties
+            const guest = await response.json();
+
+            // Construct and inject the visual layout response
+            const item = document.createElement('div');
+            item.className = 'guest-item';
+            item.innerHTML = `
+                <span class="name-text">${guest.Name}</span>
+                <span class="table-number">Table ${guest.TableNbr}</span>
+            `;
+            displayArea.appendChild(item);
 
         } catch (err) {
             console.error("Secure fetch failure:", err);
