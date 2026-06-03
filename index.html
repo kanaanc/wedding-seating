@@ -5,13 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Find Your Table</title>
     <style>
-        /* Modern, elegant styling with a clean color palette */
         :root {
-            --text-main: #2d3748;
-            --text-muted: #718096;
-            --bg-smooth: #f7fafc;
+            --text-main: #4a3f47;
+            --text-muted: #7a6a78;
+            --bg-smooth: #fdf5f2;
             --card-bg: #ffffff;
-            --accent: #4a5568;
+            --accent: #b86b7a;
+            --accent-soft: #f6d7db;
+            --border-soft: rgba(184, 107, 122, 0.18);
         }
 
         * {
@@ -21,77 +22,124 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-smooth);
+            font-family: "Georgia", "Times New Roman", serif;
+            background: radial-gradient(circle at top left, rgba(251, 221, 225, 0.45), transparent 32%),
+                        radial-gradient(circle at bottom right, rgba(216, 181, 192, 0.28), transparent 28%),
+                        linear-gradient(180deg, #fff9f6 0%, #f9ede9 100%);
             color: var(--text-main);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 24px;
+            padding: 32px;
         }
 
         .wrapper {
             background: var(--card-bg);
-            padding: 40px 30px;
-            border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.03);
+            padding: 42px 34px;
+            border-radius: 28px;
+            box-shadow: 0 18px 45px rgba(94, 55, 77, 0.12);
             width: 100%;
-            max-width: 440px;
+            max-width: 520px;
             text-align: center;
+            border: 1px solid var(--border-soft);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .wrapper::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 110%;
+            height: 140px;
+            background: radial-gradient(circle, rgba(255, 244, 238, 0.35), transparent 60%);
+            pointer-events: none;
         }
 
         h1 {
-            font-size: 26px;
-            font-weight: 500;
+            font-size: 32px;
+            font-weight: 700;
             letter-spacing: -0.5px;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
+            line-height: 1.1;
+        }
+
+        .divider {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin: 18px auto 24px;
+            color: var(--accent);
+            font-size: 18px;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: "";
+            display: inline-block;
+            width: 46px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
         }
 
         .subtitle {
             font-size: 15px;
             color: var(--text-muted);
-            margin-bottom: 30px;
-            line-height: 1.5;
+            margin-bottom: 34px;
+            line-height: 1.7;
         }
 
         .search-container {
             position: relative;
-            margin-bottom: 20px;
+            margin-bottom: 22px;
         }
 
         .input-field {
             width: 100%;
-            padding: 16px 20px;
+            padding: 18px 22px;
             font-size: 16px;
-            border: 1px solid #e2e8f0;
-            border-radius: 30px; /* Smooth rounded search bar */
+            border: 1px solid rgba(184, 107, 122, 0.24);
+            border-radius: 999px;
             outline: none;
-            transition: all 0.2s ease-in-out;
+            transition: all 0.25s ease;
             text-align: center;
-            background-color: #fafafa;
+            background-color: #fff6f3;
+            color: var(--text-main);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        }
+
+        .input-field::placeholder {
+            color: #a88b98;
+            opacity: 1;
         }
 
         .input-field:focus {
-            border-color: #cbd5e0;
+            border-color: var(--accent);
             background-color: #ffffff;
-            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.05);
+            box-shadow: 0 0 0 4px rgba(184, 107, 122, 0.12);
         }
 
         .results-list {
-            margin-top: 15px;
-            max-height: 280px;
+            margin-top: 16px;
+            max-height: 300px;
             overflow-y: auto;
-            border-radius: 8px;
+            border-radius: 20px;
         }
 
         .guest-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 14px 18px;
-            border-bottom: 1px solid #f0f4f8;
+            padding: 16px 20px;
+            border-bottom: 1px solid #f7e5e7;
             animation: fadeIn 0.3s ease-in-out;
+            background: linear-gradient(180deg, rgba(255, 250, 248, 0.95), #fffaf8);
         }
 
         .guest-item:last-child {
@@ -100,29 +148,29 @@
 
         .name-text {
             font-size: 16px;
-            font-weight: 500;
+            font-weight: 600;
             color: var(--text-main);
         }
 
         .table-number {
             font-size: 14px;
-            font-weight: 600;
-            background-color: #edf2f7;
-            padding: 6px 14px;
-            border-radius: 20px;
+            font-weight: 700;
+            background-color: var(--accent-soft);
+            padding: 8px 16px;
+            border-radius: 24px;
             color: var(--accent);
-            letter-spacing: 0.5px;
+            letter-spacing: 0.05em;
         }
 
         .status-message {
             color: var(--text-muted);
-            padding: 30px 10px;
-            font-size: 14px;
-            line-height: 1.5;
+            padding: 28px 12px;
+            font-size: 15px;
+            line-height: 1.7;
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(4px); }
+            from { opacity: 0; transform: translateY(6px); }
             to { opacity: 1; transform: translateY(0); }
         }
     </style>
@@ -131,14 +179,15 @@
 
 <div class="wrapper">
     <h1>Welcome to <br> Charbel & Paz Amor's<br> Wedding</h1>
-    <p class="subtitle">Please enter your full name below<br>to find your table assignment.</p>
+    <div class="divider">Love & Celebration</div>
+    <p class="subtitle">Please enter your name below<br>to find your table assignment.</p>
     
     <div class="search-container">
         <input 
             type="text" 
             id="nameSearch" 
             class="input-field" 
-            placeholder="Type your first and last name..." 
+            placeholder="Type your name..." 
             autocomplete="off" 
             autofocus
         >
@@ -156,7 +205,8 @@ const CLOUDFLARE_API_URL = "https://wedding-seating.charbel-kanaan86.workers.dev
 
     searchInput.addEventListener('input', (event) => {
         const searchTerm = event.target.value.trim();
-        
+        clearTimeout(timeoutDebounce);
+
         // Keeps UI completely clean until they type at least 2 letters
         if (searchTerm.length < 2) {
             displayArea.innerHTML = '';
@@ -164,7 +214,6 @@ const CLOUDFLARE_API_URL = "https://wedding-seating.charbel-kanaan86.workers.dev
         }
 
         // Debounce requests to 250ms so it doesn't spam the network on every single keystroke
-        clearTimeout(timeoutDebounce);
         timeoutDebounce = setTimeout(() => {
             fetchSeatingData(searchTerm);
         }, 250); 
